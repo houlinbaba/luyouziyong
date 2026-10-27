@@ -301,7 +301,11 @@ def api_add_host():
     name = (d.get("name") or "").strip()
     if not name:
         return jsonify({"error": "请填主机名"}), 400
-    hid = re.sub(r"[^a-z0-9_-]", "", name.lower().replace(" ", "-")) or f"h{int(time.time())}"
+    # Chinese names strip to nothing/digits only (e.g. "主路由 .1" -> "-1"),
+    # so fall back to a timestamp id instead of a meaningless "-1".
+    hid = re.sub(r"[^a-z0-9_-]", "", name.lower().replace(" ", "-")).strip("-")
+    if not hid or hid.isdigit():
+        hid = f"h{int(time.time())}"
     if hid in HOST_MAP:
         hid = f"{hid}-{int(time.time()) % 10000}"
     h = {"id": hid, "name": name, "type": d.get("type") or "ssh",
