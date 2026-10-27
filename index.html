@@ -75,8 +75,6 @@ async function load(){
   if(!hosts.length){g.innerHTML="没有主机了，点“＋ 添加主机”加一个。"; return}
   g.innerHTML=hosts.map(h=>`<div class="card" id="card-${h.id}">
     <div class="head"><b>${hostIcon(h.type)}${esc(h.name)}</b><span class="st" id="status-${h.id}">…</span></div>
-    <input class="remark" id="remark-${h.id}" value="${esc(h.remark||"")}" placeholder="备注：点这里改，改完点保存">
-    <div style="margin-top:6px"><button class="saveBtn" onclick="saveRemark('${h.id}')">保存备注</button> <span class="mut" id="rmMsg-${h.id}"></span></div>
     <div id="metrics-${h.id}" class="mut">加载中…</div>
     <div><button class="termBtn" onclick="openTerm('${h.id}')">打开终端</button><button class="delBtn" onclick="deleteHost('${h.id}')">删除此主机</button></div>
   </div>`).join("");
