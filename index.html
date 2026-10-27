@@ -33,7 +33,7 @@ h1{font-size:24px;margin:0;font-weight:700}
 .remark{width:100%;background:#222;color:#eee;border:1px solid #333;border-radius:6px;padding:6px;margin-top:10px;box-sizing:border-box;font-size:13px}
 .mrow{display:flex;gap:6px;margin-top:12px}
 .mcol{flex:1 1 0;min-width:0;text-align:center}
-.mcol .lbl{color:#fff;font-size:13px;margin-bottom:6px}
+.mcol .lbl{color:#fff;font-size:13px;margin-bottom:6px;white-space:nowrap}
 .ring{width:52px;height:52px;position:relative;margin:0 auto}
 .ring svg{transform:rotate(-90deg)}
 .ring .n{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px}
@@ -94,7 +94,7 @@ async function pollOne(h){
     <div class="mcol"><div class="lbl">CPU</div>${ring(m.cpu_pct)}<div class="sub">${m.cpu_cores?m.cpu_cores+" C":""}</div></div>
     <div class="mcol"><div class="lbl">Mem</div>${ring(m.mem_pct)}<div class="sub">${fmt(m.mem_total)}</div></div>
     <div class="mcol"><div class="lbl">磁盘</div>${ring(m.disk_pct)}<div class="sub">${fmt(m.disk_total)}</div></div>
-    <div class="mcol"><div class="lbl">网络${m.net_iface?" "+esc(m.net_iface):""}</div><div class="netline">↑ ${fmt(m.net_up)}/s</div><div class="netline">${fmt(m.net_tx_total)}</div><div class="netline">↓ ${fmt(m.net_down)}/s</div><div class="netline">${fmt(m.net_rx_total)}</div></div>
+    <div class="mcol" title="${m.net_iface?esc(m.net_iface):""}"><div class="lbl">网络</div><div class="netline">↑ ${fmt(m.net_up)}/s</div><div class="netline">${fmt(m.net_tx_total)}</div><div class="netline">↓ ${fmt(m.net_down)}/s</div><div class="netline">${fmt(m.net_rx_total)}</div></div>
     <div class="mcol"><div class="lbl">I/O</div><div class="netline">↑ ${fmt(m.io_up)}/s</div><div style="height:16.5px"></div><div class="netline">↓ ${fmt(m.io_down)}/s</div></div>
   </div>`;
 }
