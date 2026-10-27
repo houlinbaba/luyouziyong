@@ -85,7 +85,25 @@ def parse_proc_blob(text):
             m = re.match(r"(\w+):\s+(\d+)", line)
             if m:
                 mi[m.group(1)] = int(m.group(2))  # kB
-        if "MemTotal" in mi and "MemAvailable" in mi:
+        # Memory formula, matched to NeoServer on the user's AX6 router
+        # (meminfo 2026-10-27: Total 402472, Free 28436, Available 31012,
+        # Buffers 6552, Cached 44832):
+        #   panel (old, Total-Available): 92.3%  <- kernel's MemAvailable
+        #     on this Xiaomi kernel is only 31M, far below Free+Buffers
+        #     +Cached (78M), so it overstates used by ~10 points.
+        #   NeoServer: 82%
+        #   Total-Free-Buffers-Cached: 80.2%  <- closest simple formula,
+        #     within timing noise of NeoServer's 82% (meminfo is 3 min
+        #     later than the NeoServer reading).
+        # So use the classic free formula, not MemAvailable, on routers.
+        # (The big SUnreclaim slab, 125M here, stays counted as used
+        # in both formulas - that is WiFi/NSS driver slab, not apps.)
+        if "MemTotal" in mi and "MemFree" in mi:
+            out["mem_total"] = mi["MemTotal"] * 1024
+            out["mem_used"] = (mi["MemTotal"] - mi["MemFree"]
+                               - mi.get("Buffers", 0) - mi.get("Cached", 0)) * 1024
+            out["mem_available"] = mi.get("MemAvailable", 0) * 1024
+        elif "MemTotal" in mi and "MemAvailable" in mi:
             out["mem_total"] = mi["MemTotal"] * 1024
             out["mem_used"] = (mi["MemTotal"] - mi["MemAvailable"]) * 1024
     if "uptime" in d:
