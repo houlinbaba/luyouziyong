@@ -336,7 +336,14 @@ def sample_host(h):
 def index():
     if PASSWORD and not session.get("ok"):
         return redirect("/login")
-    return (BASE / "index.html").read_text()
+    # No-cache: otherwise the browser keeps serving the old index.html
+    # after a git pull and the user sees the old layout even though
+    # the server file is already new ("Already up to date" on pull).
+    resp = app.response_class((BASE / "index.html").read_text(), mimetype="text/html")
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
+    return resp
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
