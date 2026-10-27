@@ -2,37 +2,44 @@
 <title>路由器面板</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
 <style>
-/* Compact NeoServer-style layout: small cards, 4 hosts per row on a
-   wide screen (grid auto-fills, wraps on narrow screens), so the page
-   no longer runs long with one big card per row. */
-body{background:#111;color:#eee;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;margin:0;padding:12px}
-h1{font-size:18px;margin:0 0 10px}
-.gridAll{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;max-width:1600px}
-.card{background:#1c1c1e;border-radius:12px;padding:10px;box-sizing:border-box;min-width:0}
-.head{display:flex;justify-content:space-between;gap:6px;border-bottom:1px solid #333;padding-bottom:6px;font-size:13px;white-space:nowrap}
-.head b{overflow:hidden;text-overflow:ellipsis}
-.remark{width:100%;background:#222;color:#eee;border:1px solid #333;border-radius:6px;padding:5px;margin-top:6px;box-sizing:border-box;font-size:12px}
-.mrow{display:flex;gap:4px;margin-top:8px}
+/* NeoServer card layout, as close as a web page gets:
+   - One host card per NeoServer card: header (name + temp/uptime/load
+     with icons, no "在线/负载" words eating width), then one row of
+     CPU / Mem / 磁盘 / 网络 / I/O, rings coloured by % like the App.
+   - Cards are wide enough that nothing truncates: 520px minimum, so
+     a wide screen shows 2-3 per row (not 4 cramped 300px cards whose
+     network numbers turned into "..."), a phone shows 1 per row.
+     4 x 300px cards looked cramped because 5 columns x 60px cannot
+     hold "↑ 131.8 K/s" etc. - that was the visual gap in the last
+     version, fixed by going wider, not smaller. */
+body{background:#111;color:#eee;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;margin:0;padding:14px}
+h1{font-size:18px;margin:0 0 12px}
+.gridAll{display:grid;grid-template-columns:repeat(auto-fill,minmax(520px,1fr));gap:14px;max-width:1700px}
+.card{background:#1c1c1e;border-radius:16px;padding:16px;box-sizing:border-box;min-width:0}
+.head{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #333;padding-bottom:10px;font-size:15px}
+.head b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.head .st{color:#ccc;font-size:14px;white-space:nowrap}
+.remark{width:100%;background:#222;color:#eee;border:1px solid #333;border-radius:6px;padding:6px;margin-top:10px;box-sizing:border-box;font-size:13px}
+.mrow{display:flex;gap:6px;margin-top:12px}
 .mcol{flex:1 1 0;min-width:0;text-align:center}
-.mcol .lbl{color:#999;font-size:11px}
-.ring{width:44px;height:44px;position:relative;margin:2px auto}
+.mcol .lbl{color:#fff;font-size:15px;margin-bottom:6px}
+.ring{width:64px;height:64px;position:relative;margin:0 auto}
 .ring svg{transform:rotate(-90deg)}
-.ring .n{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:#4ade80}
-.sub{color:#ccc;font-size:11px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.netline{color:#ddd;font-size:11px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.off{color:#f87171}.mut{color:#999;font-size:11px}
-.extra{color:#999;font-size:11px;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#termWrap{display:none;margin-top:14px;background:#000;border-radius:12px;padding:10px;max-width:1600px}
+.ring .n{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px}
+.sub{color:#ccc;font-size:13px;line-height:1.4;white-space:nowrap}
+.netline{color:#ddd;font-size:13px;line-height:1.5;white-space:nowrap}
+.off{color:#f87171}.mut{color:#999;font-size:13px}
+#termWrap{display:none;margin-top:14px;background:#000;border-radius:12px;padding:10px;max-width:1700px}
 #term{height:420px}
-button.termBtn{background:#2a8a3a;color:#fff;border:0;border-radius:6px;padding:4px 10px;cursor:pointer;margin:4px 4px 0 0;font-size:12px}
-button.delBtn{background:#7f1d1d;color:#fff;border:0;border-radius:6px;padding:4px 10px;cursor:pointer;margin-top:4px;font-size:12px}
-button.saveBtn{background:#333;color:#eee;border:1px solid #444;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px}
+button.termBtn{background:#2a8a3a;color:#fff;border:0;border-radius:8px;padding:6px 12px;cursor:pointer;margin:6px 6px 0 0;font-size:13px}
+button.delBtn{background:#7f1d1d;color:#fff;border:0;border-radius:8px;padding:6px 12px;cursor:pointer;margin-top:6px;font-size:13px}
+button.saveBtn{background:#333;color:#eee;border:1px solid #444;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px}
 </style></head><body>
 <h1>路由器面板</h1>
-<button class="termBtn" style="margin:0 0 10px" onclick="document.getElementById('addForm').style.display=document.getElementById('addForm').style.display=='block'?'none':'block'">＋ 添加主机</button>
-<div id="addForm" style="display:none;background:#1c1c1e;border-radius:12px;padding:12px;max-width:1600px;margin-bottom:12px">
+<button class="termBtn" style="margin:0 0 12px" onclick="document.getElementById('addForm').style.display=document.getElementById('addForm').style.display=='block'?'none':'block'">＋ 添加主机</button>
+<div id="addForm" style="display:none;background:#1c1c1e;border-radius:12px;padding:14px;max-width:1700px;margin-bottom:12px">
   <input id="fName" placeholder="主机名，如 副节点 .182" style="padding:8px;margin:4px;width:220px">
-  <input id="fHost" placeholder="IP，如 127.0.0.1（走 frp 就填这个）" style="padding:8px;margin:4px;width:260px">
+  <input id="fHost" placeholder="IP，如 127.0.0.1（走 frp 就填这个，面板在 VPS 本机上，不要填公网 IP）" style="padding:8px;margin:4px;width:340px">
   <input id="fPort" placeholder="端口，如 51149" style="padding:8px;margin:4px;width:120px">
   <input id="fUser" placeholder="账号，默认 root" style="padding:8px;margin:4px;width:140px">
   <input id="fPass" type="password" placeholder="SSH 密码" style="padding:8px;margin:4px;width:180px">
@@ -46,18 +53,19 @@ button.saveBtn{background:#333;color:#eee;border:1px solid #444;border-radius:6p
 <script>
 let hosts=[], term=null, ws=null, termHost=null;
 function fmt(n){if(n==null)return "-";const u=["B","K","M","G","T"];let i=0;while(Math.abs(n)>=1000&&i<u.length-1){n/=1000;i++}return i==0?Math.round(n)+" B":n.toFixed(1)+" "+u[i]}
-// Display units are decimal (1000-based) like NeoServer, not MiB
-// (1024-based): 402472 kB meminfo = 412.1 MB decimal = 393.0 MiB.
-function ring(pct){const r=18,c=2*Math.PI*r,p=pct==null?0:Math.min(100,Math.max(0,pct));return `<div class="ring"><svg width="44" height="44"><circle cx="22" cy="22" r="18" stroke="#2a2a2a" stroke-width="5" fill="none"/><circle cx="22" cy="22" r="18" stroke="#4ade80" stroke-width="5" fill="none" stroke-dasharray="${c*p/100} ${c}"/></svg><div class="n">${pct==null?"-":pct+"%"}</div></div>`}
+// Display units are decimal (1000-based) like NeoServer, not MiB:
+// 402472 kB meminfo = 412.1 MB decimal = 393.0 MiB.
+function ringColor(pct){if(pct==null)return "#4ade80";if(pct>=80)return "#f87171";if(pct>=60)return "#fb923c";return "#4ade80"}
+function ring(pct){const r=28,c=2*Math.PI*r,p=pct==null?0:Math.min(100,Math.max(0,pct)),col=ringColor(pct);return `<div class="ring"><svg width="64" height="64"><circle cx="32" cy="32" r="28" stroke="#2a2a2a" stroke-width="7" fill="none"/><circle cx="32" cy="32" r="28" stroke="${col}" stroke-width="7" fill="none" stroke-dasharray="${c*p/100} ${c}"/></svg><div class="n" style="color:${col}">${pct==null?"-":pct+"%"}</div></div>`}
 function esc(s){return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;")}
 async function load(){
   const r=await fetch("/api/hosts"); hosts=await r.json();
   const g=document.getElementById("gridAll");
   if(!hosts.length){g.innerHTML="没有主机了，点“＋ 添加主机”加一个。"; return}
   g.innerHTML=hosts.map(h=>`<div class="card" id="card-${h.id}">
-    <div class="head"><b>${esc(h.name)}</b><span id="status-${h.id}" class="mut">…</span></div>
+    <div class="head"><b>${esc(h.name)}</b><span class="st" id="status-${h.id}">…</span></div>
     <input class="remark" id="remark-${h.id}" value="${esc(h.remark||"")}" placeholder="备注：点这里改，改完点保存">
-    <div style="margin-top:4px"><button class="saveBtn" onclick="saveRemark('${h.id}')">保存备注</button> <span class="mut" id="rmMsg-${h.id}"></span></div>
+    <div style="margin-top:6px"><button class="saveBtn" onclick="saveRemark('${h.id}')">保存备注</button> <span class="mut" id="rmMsg-${h.id}"></span></div>
     <div id="metrics-${h.id}" class="mut">加载中…</div>
     <div><button class="termBtn" onclick="openTerm('${h.id}')">打开终端</button><button class="delBtn" onclick="deleteHost('${h.id}')">删除此主机</button></div>
   </div>`).join("");
@@ -67,16 +75,16 @@ async function pollOne(h){
   const el=document.getElementById("metrics-"+h.id); if(!el) return;
   const r=await fetch("/api/metrics/"+h.id); const m=await r.json();
   const st=document.getElementById("status-"+h.id);
-  if(!m.online){st.textContent="离线"; st.className="off"; el.innerHTML=`<p class="off">${esc(m.error||"")}</p><p class="mut">SSH 不通时先在 NeoServer 里确认同一端口能连，再看 frp 隧道是否在线。</p>`; return}
-  st.textContent=(m.temp!=null?"🌡 "+m.temp+"°C · ":"")+"在线 · "+(m.uptime||"-")+" · 负载 "+(m.load??"-"); st.className="mut";
-  const extra=[m.cpu_model?"CPU："+esc(m.cpu_model):"", m.gateway?"网关："+esc(m.gateway):"", m.os_info?"系统："+esc(m.os_info):""].filter(Boolean).join(" · ");
-  el.innerHTML=`${extra?`<div class="extra" title="${extra}">${extra}</div>`:""}
-  <div class="mrow">
+  if(!m.online){st.textContent="离线"; st.style.color="#f87171"; el.innerHTML=`<p class="off">${esc(m.error||"")}</p><p class="mut">SSH 不通时先在 NeoServer 里确认同一端口能连，再看 frp 隧道是否在线。面板在 VPS 本机上，IP 必须填 127.0.0.1，不要填公网 IP。</p>`; return}
+  // NeoServer header: temp + uptime + load, with icons, no "在线/负载" words.
+  // Temp is absent on hosts with no sensor (e.g. the VPS) - same as the App.
+  st.textContent=(m.temp!=null?"🌡"+m.temp+"°C ":"")+"⏻"+(m.uptime||"-")+" 📈"+(m.load??"-"); st.style.color="#ccc";
+  el.innerHTML=`<div class="mrow">
     <div class="mcol"><div class="lbl">CPU</div>${ring(m.cpu_pct)}<div class="sub">${m.cpu_cores?m.cpu_cores+" C":""}</div></div>
-    <div class="mcol"><div class="lbl">Mem</div>${ring(m.mem_pct)}<div class="sub">${fmt(m.mem_used)} / ${fmt(m.mem_total)}</div></div>
-    <div class="mcol"><div class="lbl">磁盘${m.disk_mount?m.disk_mount:""}</div>${ring(m.disk_pct)}<div class="sub">${fmt(m.disk_used)} / ${fmt(m.disk_total)}</div></div>
-    <div class="mcol"><div class="lbl">网络</div><div class="netline">↑ ${fmt(m.net_up)}/s ${fmt(m.net_tx_total)}</div><div class="netline">↓ ${fmt(m.net_down)}/s ${fmt(m.net_rx_total)}</div></div>
-    <div class="mcol"><div class="lbl">I/O</div><div class="netline">↑ ${fmt(m.io_up)}/s ${fmt(m.io_write_total)}</div><div class="netline">↓ ${fmt(m.io_down)}/s ${fmt(m.io_read_total)}</div></div>
+    <div class="mcol"><div class="lbl">Mem</div>${ring(m.mem_pct)}<div class="sub">${fmt(m.mem_total)}</div></div>
+    <div class="mcol"><div class="lbl">磁盘</div>${ring(m.disk_pct)}<div class="sub">${fmt(m.disk_total)}</div></div>
+    <div class="mcol"><div class="lbl">网络</div><div class="netline">↑ ${fmt(m.net_up)}/s</div><div class="netline">${fmt(m.net_tx_total)}</div><div class="netline">↓ ${fmt(m.net_down)}/s</div><div class="netline">${fmt(m.net_rx_total)}</div></div>
+    <div class="mcol"><div class="lbl">I/O</div><div class="netline">↑ ${fmt(m.io_up)}/s</div><div class="netline">${fmt(m.io_write_total)}</div><div class="netline">↓ ${fmt(m.io_down)}/s</div><div class="netline">${fmt(m.io_read_total)}</div></div>
   </div>`;
 }
 let polling=false;
