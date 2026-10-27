@@ -1,0 +1,18 @@
+[Unit]
+Description=Router Panel (NeoServer-style cards + terminal)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/router-panel
+# System-pip install route (no venv): python3 app.py
+ExecStart=/usr/bin/python3 /opt/router-panel/app.py
+Restart=always
+RestartSec=5
+# !!! Edit these two lines on the VPS before enabling !!!
+Environment=PANEL_PASSWORD=改成你自己的密码
+Environment=PANEL_PORT=8080
+
+[Install]
+WantedBy=multi-user.target
