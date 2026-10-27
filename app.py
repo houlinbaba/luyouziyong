@@ -155,15 +155,29 @@ def parse_proc_blob(text):
             out["disk_total"], out["disk_used"] = pick
             out["disk_mount"] = "/data" if "/data" in rows else "/"
     if "netdev" in d:
-        rx = tx = 0
+        # NeoServer does NOT sum all interfaces. It keeps per-interface
+        # rows (networkInterfaceStats) and displays only the single
+        # default interface (networkDefaultInterfaceStats), i.e. the
+        # interface of the default route (see gateway below, same
+        # command NeoServer uses: route dest 00000000). Summing all
+        # interfaces counted one packet several times (WAN in, br-lan
+        # out, wlan out) and inflated AX6 totals to TX 59.2G/RX 43.7G
+        # vs NeoServer's single-interface TX 9.3G/RX 20.5G.
+        # Keep the per-interface map here; sample_host picks the
+        # gateway interface from it (fallback: sum of non-lo only).
+        net = {}
         for line in d["netdev"].splitlines():
             if ":" in line and not line.strip().startswith("Inter-") and not line.strip().startswith("face"):
-                fields = line.split(":")[1].split()
+                name, rest = line.split(":", 1)
+                fields = rest.split()
                 if len(fields) >= 9:
                     try:
-                        rx += int(fields[0]); tx += int(fields[8])
+                        net[name.strip()] = (int(fields[0]), int(fields[8]))
                     except ValueError:
                         pass
+        out["netdev_map"] = net
+        rx = sum(v[0] for k, v in net.items() if k != "lo")
+        tx = sum(v[1] for k, v in net.items() if k != "lo")
         out["net_rx"] = rx; out["net_tx"] = tx
     if "diskstats" in d:
         # fields: reads completed, sectors read, writes completed, sectors written
@@ -260,6 +274,17 @@ def sample_host(h):
             return {"id": hid, "name": h["name"], "online": False, "error": str(e)[:120]}
     if "error" in raw:
         return {"id": hid, "name": h["name"], "online": False, "error": raw["error"][:120]}
+    # Network: NeoServer single default-interface rule (see parse).
+    # raw["gateway"] is the default-route interface (e.g. eth1 on the
+    # AX6, pppoe-wan on the GL sample in the NeoServer binary). Use
+    # only that interface's counters; keep the raw map on the sample
+    # so the next poll compares the same interface, not a changing sum.
+    netmap = raw.get("netdev_map") or {}
+    gw = raw.get("gateway")
+    if gw and gw in netmap:
+        raw = dict(raw)
+        raw["net_rx"], raw["net_tx"] = netmap[gw]
+        raw["net_iface"] = gw
     with _lock:
         prev = _prev.get(hid)
         _prev[hid] = (now, raw)
@@ -293,6 +318,7 @@ def sample_host(h):
         "disk_mount": raw.get("disk_mount"),
         "net_up": net_up, "net_down": net_down,
         "net_tx_total": raw.get("net_tx"), "net_rx_total": raw.get("net_rx"),
+        "net_iface": raw.get("net_iface") or raw.get("gateway"),
         "io_up": io_up, "io_down": io_down,
         "io_write_total": raw.get("io_write"), "io_read_total": raw.get("io_read"),
         "uptime": fmt_uptime(raw.get("uptime")), "load": raw.get("load"),
