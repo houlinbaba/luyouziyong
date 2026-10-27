@@ -180,11 +180,18 @@ def parse_proc_blob(text):
         tx = sum(v[1] for k, v in net.items() if k != "lo")
         out["net_rx"] = rx; out["net_tx"] = tx
     if "diskstats" in d:
-        # fields: reads completed, sectors read, writes completed, sectors written
+        # App-style I/O: whole disks only, not partitions, not loop/ram/
+        # dm (device-mapper, double-counts the same data as its backing
+        # disk), not mtd/ubi flash (routers have no whole disk, so App
+        # shows I/O 0 there - same result here). Summing every line
+        # before counted vdc + vdc1 + vdc2 + dm-1 four times, which is
+        # how the VPS card got write 133.8G. Whole-disk names:
+        # sd[a-z]+, vd[a-z]+, xvd[a-z]+, nvme<n>n<m>, mmcblk<n>.
         sr = sw = 0
+        whole = re.compile(r"^(sd[a-z]+|vd[a-z]+|xvd[a-z]+|nvme\d+n\d+|mmcblk\d+)$")
         for line in d["diskstats"].splitlines():
             f = line.split()
-            if len(f) >= 14:
+            if len(f) >= 14 and whole.match(f[2]):
                 try:
                     sr += int(f[5]) * 512; sw += int(f[9]) * 512
                 except ValueError:
