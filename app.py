@@ -120,15 +120,22 @@ def parse_proc_blob(text):
         out["os_info"] = m.group(1)[:80] if m else d["osinfo"].strip().splitlines()[0][:80] if d["osinfo"].strip() else None
     if "df" in d:
         # df -k: Filesystem 1K-blocks Used Available Use% Mounted
+        # On Xiaomi, "/" is the squashfs overlay (always ~100% full by
+        # design); the disk the user actually watches is /data (AGH,
+        # frp, ShellClash all live there, and NeoServer reports /data:
+        # 64% here vs panel's old 100%). Prefer /data, fall back to /.
+        rows = {}
         for line in d["df"].splitlines():
             parts = line.split()
-            if len(parts) >= 6 and parts[-1] == "/":
+            if len(parts) >= 6 and parts[-1] in ("/data", "/"):
                 try:
-                    out["disk_total"] = int(parts[1]) * 1024
-                    out["disk_used"] = int(parts[2]) * 1024
+                    rows[parts[-1]] = (int(parts[1]) * 1024, int(parts[2]) * 1024)
                 except ValueError:
                     pass
-                break
+        pick = rows.get("/data") or rows.get("/")
+        if pick:
+            out["disk_total"], out["disk_used"] = pick
+            out["disk_mount"] = "/data" if "/data" in rows else "/"
     if "netdev" in d:
         rx = tx = 0
         for line in d["netdev"].splitlines():
@@ -262,6 +269,7 @@ def sample_host(h):
         "temp": raw.get("temp"),
         "mem_pct": mem_pct, "mem_used": raw.get("mem_used"), "mem_total": raw.get("mem_total"),
         "disk_pct": disk_pct, "disk_used": raw.get("disk_used"), "disk_total": raw.get("disk_total"),
+        "disk_mount": raw.get("disk_mount"),
         "net_up": net_up, "net_down": net_down,
         "net_tx_total": raw.get("net_tx"), "net_rx_total": raw.get("net_rx"),
         "io_up": io_up, "io_down": io_down,
