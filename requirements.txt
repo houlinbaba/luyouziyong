@@ -1,0 +1,4 @@
+flask>=3.0
+flask-sock>=0.7
+# v2 不再用 paramiko（它不接受 ssh-rsa）。SSH 走系统 ssh + sshpass，
+# VPS 上另需：apt install sshpass
