@@ -242,9 +242,12 @@ def fmt_bytes(n):
     return f"{n:.1f} T"
 
 def fmt_uptime(s):
+    # NeoServer-style: "4d", "2d", "11h59m" - minutes matter under a day.
     if s is None: return "-"
-    d = int(s // 86400); h = int((s % 86400) // 3600)
-    return f"{d}d {h}h" if d else f"{h}h"
+    d = int(s // 86400); h = int((s % 86400) // 3600); m = int((s % 3600) // 60)
+    if d: return f"{d}d" if h == 0 else f"{d}d{h}h"
+    if h: return f"{h}h{m}m"
+    return f"{m}m"
 
 def sample_host(h):
     hid = h["id"]
