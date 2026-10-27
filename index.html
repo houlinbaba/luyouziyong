@@ -64,12 +64,20 @@ async function pollOne(h){
   el.innerHTML=`${extra?`<div class="mut" style="margin-top:8px">${extra}</div>`:""}<div class="grid">
     <div>${ring(m.cpu_pct)}<div class="sub">CPU<br>${m.cpu_cores?m.cpu_cores+" C":""}</div></div>
     <div>${ring(m.mem_pct)}<div class="sub">Mem<br>${fmt(m.mem_used)} / ${fmt(m.mem_total)}</div></div>
-    <div>${ring(m.disk_pct)}<div class="sub">磁盘<br>${fmt(m.disk_used)} / ${fmt(m.disk_total)}</div></div>
+    <div>${ring(m.disk_pct)}<div class="sub">磁盘${m.disk_mount?m.disk_mount:""}<br>${fmt(m.disk_used)} / ${fmt(m.disk_total)}</div></div>
   </div>
   <div class="net"><b>网络</b> ↑ ${fmt(m.net_up)}/s ${fmt(m.net_tx_total)} &nbsp; ↓ ${fmt(m.net_down)}/s ${fmt(m.net_rx_total)}<br>
   <b>I/O</b> ↑ ${fmt(m.io_up)}/s ${fmt(m.io_write_total)} &nbsp; ↓ ${fmt(m.io_down)}/s ${fmt(m.io_read_total)}</div>`;
 }
-async function pollAll(){for(const h of hosts) await pollOne(h)}
+let polling=false;
+async function pollAll(){
+  // Guard against overlapping polls: a slow SSH poll (router busy,
+  // mem ~90%) used to stack up every 3s, exhaust dropbear sessions
+  // and flip the card offline/online = flicker. Skip a tick if the
+  // previous round is still running.
+  if(polling) return; polling=true;
+  try{for(const h of hosts) await pollOne(h)} finally{polling=false}
+}
 async function addHost(){
   const body={name:document.getElementById("fName").value, host:document.getElementById("fHost").value, port:document.getElementById("fPort").value, username:document.getElementById("fUser").value||"root", password:document.getElementById("fPass").value, type:"ssh"};
   const r=await fetch("/api/hosts/add",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
