@@ -87,7 +87,7 @@ async function pollOne(h){
     <div class="mcol"><div class="lbl">CPU</div>${ring(m.cpu_pct)}<div class="sub">${m.cpu_cores?m.cpu_cores+" C":""}</div></div>
     <div class="mcol"><div class="lbl">Mem</div>${ring(m.mem_pct)}<div class="sub">${fmt(m.mem_total)}</div></div>
     <div class="mcol"><div class="lbl">磁盘</div>${ring(m.disk_pct)}<div class="sub">${fmt(m.disk_total)}</div></div>
-    <div class="mcol"><div class="lbl">网络</div><div class="netline">↑ ${fmt(m.net_up)}/s</div><div class="netline">${fmt(m.net_tx_total)}</div><div class="netline">↓ ${fmt(m.net_down)}/s</div><div class="netline">${fmt(m.net_rx_total)}</div></div>
+    <div class="mcol"><div class="lbl">网络${m.net_iface?" "+esc(m.net_iface):""}</div><div class="netline">↑ ${fmt(m.net_up)}/s</div><div class="netline">${fmt(m.net_tx_total)}</div><div class="netline">↓ ${fmt(m.net_down)}/s</div><div class="netline">${fmt(m.net_rx_total)}</div></div>
     <div class="mcol"><div class="lbl">I/O</div><div class="netline">↑ ${fmt(m.io_up)}/s</div><div class="netline">${fmt(m.io_write_total)}</div><div class="netline">↓ ${fmt(m.io_down)}/s</div><div class="netline">${fmt(m.io_read_total)}</div></div>
   </div>`;
 }
